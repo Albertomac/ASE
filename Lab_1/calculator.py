@@ -10,6 +10,10 @@ def sum(m, n):
   return m
 
 def divide(m, n):
+
+  #altro modo di gestire il caso 'secondo argomento == 0':
+  #if n == 0:
+   # raise ZeroDivisionError("You cannot divide by 0!!")
   
   result = 0
   if n == 0:
