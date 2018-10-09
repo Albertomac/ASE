@@ -7,7 +7,7 @@ doodles = JsonBlueprint('doodles', __name__)
 _ACTIVEPOLLS = {} # list of created polls
 _POLLNUMBER = 0 # index of the last created poll
 
-@doodles.route() #TODO: complete the decoration
+@doodles.route('/doodles', methods=['GET', 'POST'])
 def all_polls():
 
     if request.method == 'POST':
@@ -19,7 +19,7 @@ def all_polls():
     return result
 
 
-@doodles.route() #TODO: complete the decoration
+@doodles.route('/doodles/<id>', methods=['GET', 'DELETE', 'PUT'])
 def single_poll(id):
     global _ACTIVEPOLLS
     result = ""
@@ -30,45 +30,64 @@ def single_poll(id):
         result = jsonify(_ACTIVEPOLLS[id].serialize())
 
     elif request.method == 'DELETE': 
-        #TODO: delete a poll and get back winners
+        result = jsonify(_ACTIVEPOLLS[id].get_winners())
+        del _ACTIVEPOLLS[id]
+        _POLLNUMBER = sorted(_ACTIVEPOLLS.keys())[-1]
 
     elif request.method == 'PUT': 
-        #TODO: vote in a poll
-
+        result = jsonify(vote(id, request))
 
     return result
 
-@doodles.route() #TODO: complete the decoration
+
+#     return result
+
+@doodles.route('/doodles/<id>/<person>', methods=['GET', 'DELETE'])
 def person_poll(id, person):
-    
-    #TODO: check if the Doodle exists
-    
+    global _ACTIVEPOLLS
+    result = ""
+
+    exist_poll(id)
+
     if request.method == 'GET':
         #TODO: retrieve all preferences cast from <person> in poll <id>
-    if request.method == 'DELETE':
+        result = jsonify({'votedoptions': _ACTIVEPOLLS[id].get_voted_options(person)})
+    elif request.method == 'DELETE':
         #TODO: delete all preferences cast from <person> in poll <id>
+        result = jsonify({'removed': _ACTIVEPOLLS[id].delete_voted_options(person)})
 
     return result
-       
 
 def vote(id, request):
+    global _ACTIVEPOLLS
     result = ""
-    #TO DO: extract person and option fields from the JSON request
+    
+    json_data = request.get_json()
+    person = json_data['person']
+    option = json_data['option']
 
     try:
-        # TODO: cast a vote from person in  _ACTIVEPOLLS[id]
+        result = _ACTIVEPOLLS[id].vote(person, option)
     except UserAlreadyVotedException:
         abort(400) # Bad Request
     except NonExistingOptionException:
         # TODO: manage the NonExistingOptionException
+        abort(409) # Conflicts
 
     return result
 
 
 def create_doodle(request):
     global _ACTIVEPOLLS, _POLLNUMBER
-    #TODO: create a new poll in _ACTIVEPOLLS based on the input JSON. Update _POLLNUMBER by incrementing it.
-    
+
+    json_data = request.get_json()
+    title = json_data['title']
+    options = json_data['options']
+
+    _POLLNUMBER += 1
+    poll = Poll(_POLLNUMBER, title, options)
+    _ACTIVEPOLLS[str(_POLLNUMBER)] = poll
+
     return jsonify({'pollnumber': _POLLNUMBER})
 
 
@@ -77,6 +96,7 @@ def get_all_doodles(request):
     return jsonify(activepolls = [e.serialize() for e in _ACTIVEPOLLS.values()])
 
 def exist_poll(id):
+    global _ACTIVEPOLLS, _POLLNUMBER
     if int(id) > _POLLNUMBER:
         abort(404) # error 404: Not Found, i.e. wrong URL, resource does not exist
     elif not(id in _ACTIVEPOLLS):
