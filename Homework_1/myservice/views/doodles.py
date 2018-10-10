@@ -30,12 +30,12 @@ def single_poll(id):
         result = jsonify(_ACTIVEPOLLS[id].serialize())
 
     elif request.method == 'DELETE': 
-        result = jsonify(_ACTIVEPOLLS[id].get_winners())
+        result = jsonify({'winners': _ACTIVEPOLLS[id].get_winners()})
         del _ACTIVEPOLLS[id]
         _POLLNUMBER = sorted(_ACTIVEPOLLS.keys())[-1]
 
     elif request.method == 'PUT': 
-        result = jsonify(vote(id, request))
+        result = jsonify({'winners': vote(id, request)})
 
     return result
 
@@ -72,7 +72,7 @@ def vote(id, request):
         abort(400) # Bad Request
     except NonExistingOptionException:
         # TODO: manage the NonExistingOptionException
-        abort(409) # Conflicts
+        abort(400) # Conflicts
 
     return result
 
