@@ -15,64 +15,54 @@ def all_polls():
 
     elif request.method == 'GET':
         result = get_all_doodles(request)
-    
+
     return result
 
 
 @doodles.route('/doodles/<id>', methods=['GET', 'DELETE', 'PUT'])
 def single_poll(id):
     global _ACTIVEPOLLS
-    result = ""
 
     exist_poll(id) # check if the Doodle is an existing one
 
     if request.method == 'GET': # retrieve a poll
         result = jsonify(_ACTIVEPOLLS[id].serialize())
 
-    elif request.method == 'DELETE': 
-        result = jsonify({'winners': _ACTIVEPOLLS[id].get_winners()})
-        del _ACTIVEPOLLS[id]
+    elif request.method == 'DELETE':
+        poll = _ACTIVEPOLLS.pop(id)
         _POLLNUMBER = sorted(_ACTIVEPOLLS.keys())[-1]
+        result = jsonify({'winners': poll.get_winners()})
 
     elif request.method == 'PUT': 
         result = jsonify({'winners': vote(id, request)})
 
     return result
 
-
-#     return result
-
 @doodles.route('/doodles/<id>/<person>', methods=['GET', 'DELETE'])
 def person_poll(id, person):
     global _ACTIVEPOLLS
-    result = ""
 
     exist_poll(id)
 
     if request.method == 'GET':
-        #TODO: retrieve all preferences cast from <person> in poll <id>
         result = jsonify({'votedoptions': _ACTIVEPOLLS[id].get_voted_options(person)})
+
     elif request.method == 'DELETE':
-        #TODO: delete all preferences cast from <person> in poll <id>
         result = jsonify({'removed': _ACTIVEPOLLS[id].delete_voted_options(person)})
 
     return result
 
 def vote(id, request):
     global _ACTIVEPOLLS
-    result = ""
-    
+
     json_data = request.get_json()
     person = json_data['person']
     option = json_data['option']
 
     try:
         result = _ACTIVEPOLLS[id].vote(person, option)
-    except UserAlreadyVotedException:
+    except (UserAlreadyVotedException, NonExistingOptionException):
         abort(400) # Bad Request
-    except NonExistingOptionException:
-        # TODO: manage the NonExistingOptionException
-        abort(400) # Conflicts
 
     return result
 
@@ -97,7 +87,9 @@ def get_all_doodles(request):
 
 def exist_poll(id):
     global _ACTIVEPOLLS, _POLLNUMBER
+
     if int(id) > _POLLNUMBER:
         abort(404) # error 404: Not Found, i.e. wrong URL, resource does not exist
+
     elif not(id in _ACTIVEPOLLS):
         abort(410) # error 410: Gone, i.e. it existed but it's not there anymore
