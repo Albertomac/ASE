@@ -7,6 +7,7 @@ doodles = JsonBlueprint('doodles', __name__)
 _ACTIVEPOLLS = {} # list of created polls
 _POLLNUMBER = 0 # index of the last created poll
 
+
 @doodles.route('/doodles', methods=['GET', 'POST'])
 def all_polls():
 
@@ -38,6 +39,7 @@ def single_poll(id):
 
     return result
 
+
 @doodles.route('/doodles/<id>/<person>', methods=['GET', 'DELETE'])
 def person_poll(id, person):
     global _ACTIVEPOLLS
@@ -51,6 +53,7 @@ def person_poll(id, person):
         result = jsonify({'removed': _ACTIVEPOLLS[id].delete_voted_options(person)})
 
     return result
+
 
 def vote(id, request):
     global _ACTIVEPOLLS
@@ -84,6 +87,7 @@ def create_doodle(request):
 def get_all_doodles(request):
     global _ACTIVEPOLLS
     return jsonify(activepolls = [e.serialize() for e in _ACTIVEPOLLS.values()])
+
 
 def exist_poll(id):
     global _ACTIVEPOLLS, _POLLNUMBER
