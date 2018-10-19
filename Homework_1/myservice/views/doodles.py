@@ -31,7 +31,6 @@ def single_poll(id):
 
     elif request.method == 'DELETE':
         poll = _ACTIVEPOLLS.pop(id)
-        _POLLNUMBER = sorted(_ACTIVEPOLLS.keys())[-1]
         result = jsonify({'winners': poll.get_winners()})
 
     elif request.method == 'PUT': 
